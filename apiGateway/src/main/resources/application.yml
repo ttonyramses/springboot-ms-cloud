@@ -1,0 +1,62 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+#      routes:
+#        - id: users-service
+#          uri: lb://users-ws
+#          predicates:
+#            - Path=/toto/users/**
+#            - Method=GET
+#          filters:
+#            - RemoveRequestHeader=Cookie
+#            - RewritePath=/toto/(?<segment>.*), /$\{segment}
+      routes:
+        - id: users-ws
+          uri: lb://users-ws
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - RemoveRequestHeader=Cookie
+
+        - id: users-ws-login
+          uri: lb://users-ws
+          predicates:
+            - Path=/users/login
+            - Method=POST
+            - Header=Authorization, ^Bearer\s(.+$)
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/users/(?<segment>.*), /$\{segment}
+            - AuthorizationHeaderFilter
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8010/eureka
+
+
+
+# Configuration des logs
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.route: DEBUG
+    org.springframework.cloud.gateway.handler: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG
+    org.springframework.cloud.netflix.eureka: DEBUG
+    root: INFO
+#  pattern:
+#    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+token:
+  expiration.time: 3600 # En seconde
+  secret: dd9v6Vp5DqObDoaKCuG6+gMgmkkdFjmjjP2P5K6ZMyDCrP2OU/7HQ+xND+TjmmR2QTYx7Kq91UqQbXTCFoz2ug==
