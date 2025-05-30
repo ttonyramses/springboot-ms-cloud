@@ -20,7 +20,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.UUID;
 
 public class AuthentificationFilter extends UsernamePasswordAuthenticationFilter {
 
@@ -57,8 +56,20 @@ public class AuthentificationFilter extends UsernamePasswordAuthenticationFilter
 
 
         String token = jwtUtil.generateToken(user.email());
-        response.addHeader("token", token);
-        response.addHeader("userId", UUID.randomUUID().toString());
+        response.addHeader("jwt-token", token);
+
+        // ✅ Retourner dans le body JSON
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String json = String.format("""
+        {
+            "jwtToken": "%s",
+        }
+        """, token);
+
+        response.getWriter().write(json);
+        response.getWriter().flush();
 
     }
 

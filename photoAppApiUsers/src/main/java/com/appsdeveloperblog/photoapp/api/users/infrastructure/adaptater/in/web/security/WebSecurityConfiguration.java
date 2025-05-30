@@ -36,12 +36,13 @@ public class WebSecurityConfiguration {
         AuthenticationManager authenticationManager = authenticationManagerBuilder.build();
 
         AuthentificationFilter authentificationFilter = new AuthentificationFilter(authenticationManager, userUseCase, environment);
-        authentificationFilter.setFilterProcessesUrl(environment.getProperty("login.url.path"));
+        String loginEndpoint = environment.getProperty("login.url.path");
+        authentificationFilter.setFilterProcessesUrl(loginEndpoint);
 
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/users/**").permitAll()
-                .requestMatchers("/login").permitAll()
+                .requestMatchers(loginEndpoint).permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated())
                 .addFilter(authentificationFilter)

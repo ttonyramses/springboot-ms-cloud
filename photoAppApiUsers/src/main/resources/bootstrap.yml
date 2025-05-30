@@ -1,0 +1,13 @@
+spring:
+  cloud:
+    config:
+      uri: http://localhost:8888  # URL de votre Config Server via Gateway
+      # ou directement : http://localhost:8888 si pas de gateway
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        multiplier: 1.1
+        max-attempts: 6
+        max-interval: 2000
+#  profiles:
+#    active: default  # ou dev, prod selon votre environnement

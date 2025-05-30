@@ -1,6 +1,7 @@
 package com.appsdeveloperblog.photoapp.api.gateway.filter;
 
 import com.appsdeveloperblog.photoapp.api.gateway.JwtUtil;
+import io.jsonwebtoken.JwtException;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.env.Environment;
@@ -34,16 +35,31 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
             if (!request.getHeaders().containsKey("Authorization")) {
                 return onError(exchange, "No authorization header", HttpStatus.UNAUTHORIZED);
             }
-            String authorizationHeader = request.getHeaders().get("Authorization").get(0);
+            String authorizationHeader = request.getHeaders().getFirst("Authorization");
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                return onError(exchange, "Invalid authorization header format", HttpStatus.UNAUTHORIZED);
+            }
             String jwtToken = authorizationHeader.replace("Bearer ", "");
-            JwtUtil jwtUtil = new JwtUtil(environment.getProperty("token.secret"), environment.getProperty("token.expiration.time", Long.class, 1800L));
+
+            JwtUtil jwtUtil = new JwtUtil(
+                    environment.getProperty("token.secret"),
+                    environment.getProperty("token.expiration.time", Long.class, 1800L)
+            );
 
 
-            if (jwtUtil.isTokenValid(jwtToken, "ttonyramses@gmail.com")) {
-                return onError(exchange, "JWT Token is not valid", HttpStatus.UNAUTHORIZED);
+            String subject="";
+            try {
+                subject = jwtUtil.extractSubject(jwtToken); // ⚠️ Valide la signature et expire
+            } catch (JwtException e) {
+                return onError(exchange, "Invalid JWT: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
             }
 
-            return chain.filter(exchange);
+            // Propagation de l'utilisateur courant
+            ServerHttpRequest modifiedRequest = request.mutate()
+                    .header("X-User-Email", subject)
+                    .build();
+
+            return chain.filter(exchange.mutate().request(modifiedRequest).build());
         };
     }
 

@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    include: secrets
+  application:
+    name: config-server
+server.port: 8888
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: busrefresh
+---
+spring.cloud.config.server.git:
+  uri: ${server.git.uri}
+  username: ${server.git.username}
+  password: ${server.git.password}
+  clone-on-state: true

@@ -41,12 +41,12 @@ public class JwtUtil {
         return claims.getSubject();
     }
 
-    public boolean isTokenValid(String token, String expectedSubject) {
+    /*public boolean isTokenValid(String token, String expectedSubject) {
         try {
             String actualSubject = extractSubject(token); //la valication de la date d'expiration est déjà faite
             return expectedSubject.equals(actualSubject);
         } catch (Exception e) {
             return false;
         }
-    }
+    }*/
 }

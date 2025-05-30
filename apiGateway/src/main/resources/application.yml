@@ -23,19 +23,20 @@ spring:
           uri: lb://users-ws
           predicates:
             - Path=/api/users/**
+            - Header=Authorization, ^Bearer\s(.+$)
           filters:
             - RemoveRequestHeader=Cookie
+            - AuthorizationHeaderFilter
 
         - id: users-ws-login
           uri: lb://users-ws
           predicates:
             - Path=/users/login
             - Method=POST
-            - Header=Authorization, ^Bearer\s(.+$)
           filters:
             - RemoveRequestHeader=Cookie
-            - RewritePath=/users/(?<segment>.*), /$\{segment}
-            - AuthorizationHeaderFilter
+#            - RewritePath=/users/(?<segment>.*),/$\{segment}
+
 
 
 eureka:
