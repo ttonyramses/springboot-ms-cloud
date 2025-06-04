@@ -2,9 +2,11 @@ package com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web
 
 import com.appsdeveloperblog.photoapp.api.users.application.port.in.UserUseCase;
 import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.filter.AuthentificationFilter;
+import com.appsdeveloperblog.photoapp.api.users.infrastructure.configuration.ApplicationConfiguration;
+import org.springframework.boot.actuate.web.exchanges.HttpExchangeRepository;
+import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,11 +21,11 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class WebSecurityConfiguration {
     private final UserUseCase userUseCase;
-    private final Environment environment;
+    private final ApplicationConfiguration applicationConfiguration;
 
-    public WebSecurityConfiguration(UserUseCase userUseCase, Environment environment) {
+    public WebSecurityConfiguration(UserUseCase userUseCase,  ApplicationConfiguration applicationConfiguration) {
         this.userUseCase = userUseCase;
-        this.environment = environment;
+        this.applicationConfiguration = applicationConfiguration;
     }
 
 
@@ -35,14 +37,14 @@ public class WebSecurityConfiguration {
         authenticationManagerBuilder.userDetailsService(userUseCase).passwordEncoder(new BCryptPasswordEncoder());
         AuthenticationManager authenticationManager = authenticationManagerBuilder.build();
 
-        AuthentificationFilter authentificationFilter = new AuthentificationFilter(authenticationManager, userUseCase, environment);
-        String loginEndpoint = environment.getProperty("login.url.path");
-        authentificationFilter.setFilterProcessesUrl(loginEndpoint);
+        AuthentificationFilter authentificationFilter = new AuthentificationFilter(authenticationManager, userUseCase, applicationConfiguration);
+        authentificationFilter.setFilterProcessesUrl(applicationConfiguration.getLoginUrlPath());
 
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/users/**").permitAll()
-                .requestMatchers(loginEndpoint).permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers(applicationConfiguration.getLoginUrlPath()).permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated())
                 .addFilter(authentificationFilter)
@@ -51,5 +53,10 @@ public class WebSecurityConfiguration {
 
         http.headers(headers-> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
         return http.build();
+    }
+
+    @Bean
+    public HttpExchangeRepository httpExchangeRepository(){
+        return new InMemoryHttpExchangeRepository();
     }
 }

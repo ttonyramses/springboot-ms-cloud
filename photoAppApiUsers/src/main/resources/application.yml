@@ -7,22 +7,6 @@ spring:
   devtools:
     restart:
       enabled: true
-  datasource:
-    username: tony
-    password: tony
-    url: jdbc:h2:mem:testdb
-    driverClassName: org.h2.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
-        type: trace
-  h2:
-    console:
-      enabled: true
-      settings.web-allow-others: true
 eureka:
   client:
     service-url:
@@ -30,12 +14,24 @@ eureka:
   instance:
     instance-id: ${spring.application.name}:${spring.application.instance_id}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - busrefresh
+          - health
+          - mappings
+          - httpexchanges
+          - info
+  endpoint:
+    health:
+      show-details: always
+    busrefresh:
+      enabled: true
 
-logging:
-  level:
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-
-token:
-  expiration.time: 3600 # En seconde
-  secret: dd9v6Vp5DqObDoaKCuG6+gMgmkkdFjmjjP2P5K6ZMyDCrP2OU/7HQ+xND+TjmmR2QTYx7Kq91UqQbXTCFoz2ug==
-login.url.path: /users/login
+application:
+  token:
+    expiration-time: 3600 # En seconde
+    secret: dd9v6Vp5DqObDoaKCuG6+gMgmkkdFjmjjP2P5K6ZMyDCrP2OU/7HQ+xND+TjmmR2QTYx7Kq91UqQbXTCFoz2ug==
+  login-url-path: /users/login

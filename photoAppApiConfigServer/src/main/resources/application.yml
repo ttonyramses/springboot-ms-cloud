@@ -1,18 +1,49 @@
+server.port: 8888
+
+# Configuration de l'encryption
+encrypt:
+#  key: WRyER0TVYTvDOIyp5w6D0xAGm5iIFYIPFQ6DTm71DKHGRCm9615zq01rB3UUIlmd
+  key-store:
+    location: apiEncryptionKey.jks
+    password: azerty12
+    alias: apiEncryptionKey
+
 spring:
   profiles:
     include: secrets
   application:
     name: config-server
-server.port: 8888
+  rabbitmq:
+    host: ${server.rabbitmq.host}
+    port: ${server.rabbitmq.port}
+    username: ${server.rabbitmq.username}
+    password: ${server.rabbitmq.password}
+
+  cloud.config.server.git:
+    uri: ${server.git.uri}
+    username: ${server.git.username}
+    password: ${server.git.password}
+    clone-on-state: true
+    force-pull: true
+  security:
+    user:
+      name: admin
+      password: admin1234
+      roles: ADMIN
+    user1:
+      name: user1
+      password: admin1234
+      roles: ADMIN
 
 management:
   endpoints:
     web:
       exposure:
-        include: busrefresh
----
-spring.cloud.config.server.git:
-  uri: ${server.git.uri}
-  username: ${server.git.username}
-  password: ${server.git.password}
-  clone-on-state: true
+        include:
+        - busrefresh
+        - health
+  endpoint:
+    health:
+      show-details: always
+    busrefresh:
+      enabled: true

@@ -27,6 +27,11 @@ spring:
           filters:
             - RemoveRequestHeader=Cookie
             - AuthorizationHeaderFilter
+        - id: users-ws-actuator
+          uri: lb://users-ws
+          predicates:
+            - Path=/actuator/**
+
 
         - id: users-ws-login
           uri: lb://users-ws
@@ -43,21 +48,24 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8010/eureka
+    register-with-eureka: true
+    fetch-registry: true
 
 
 
 # Configuration des logs
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.cloud.gateway.route: DEBUG
-    org.springframework.cloud.gateway.handler: DEBUG
-    org.springframework.web.reactive: DEBUG
-    reactor.netty: DEBUG
-    org.springframework.cloud.netflix.eureka: DEBUG
-    root: INFO
+#    org.springframework.cloud.gateway: DEBUG
+#    org.springframework.cloud.gateway.route: DEBUG
+#    org.springframework.cloud.gateway.handler: DEBUG
+#    org.springframework.web.reactive: DEBUG
+#    reactor.netty: DEBUG
+#    org.springframework.cloud.netflix.eureka: DEBUG
+    root: DEBUG
 #  pattern:
 #    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-token:
-  expiration.time: 3600 # En seconde
-  secret: dd9v6Vp5DqObDoaKCuG6+gMgmkkdFjmjjP2P5K6ZMyDCrP2OU/7HQ+xND+TjmmR2QTYx7Kq91UqQbXTCFoz2ug==
+application:
+  token:
+    expiration-time: 3600 # En seconde
+    secret: dd9v6Vp5DqObDoaKCuG6+gMgmkkdFjmjjP2P5K6ZMyDCrP2OU/7HQ+xND+TjmmR2QTYx7Kq91UqQbXTCFoz2ug==

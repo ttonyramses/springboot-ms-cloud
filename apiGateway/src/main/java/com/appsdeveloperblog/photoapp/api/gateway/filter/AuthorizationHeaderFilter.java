@@ -1,10 +1,11 @@
 package com.appsdeveloperblog.photoapp.api.gateway.filter;
 
 import com.appsdeveloperblog.photoapp.api.gateway.JwtUtil;
+import com.appsdeveloperblog.photoapp.api.gateway.configuration.ApplicationConfiguration;
 import io.jsonwebtoken.JwtException;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -13,13 +14,13 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
+@RefreshScope
 public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<AuthorizationHeaderFilter.Config> {
 
-    private final Environment environment;
-
-    public AuthorizationHeaderFilter(Environment environment) {
+    private final ApplicationConfiguration applicationConfiguration;
+    public AuthorizationHeaderFilter(ApplicationConfiguration applicationConfiguration) {
         super(Config.class);
-        this.environment = environment;
+        this.applicationConfiguration = applicationConfiguration;
     }
 
 
@@ -42,8 +43,8 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
             String jwtToken = authorizationHeader.replace("Bearer ", "");
 
             JwtUtil jwtUtil = new JwtUtil(
-                    environment.getProperty("token.secret"),
-                    environment.getProperty("token.expiration.time", Long.class, 1800L)
+                    applicationConfiguration.getToken().getSecret(),
+                    applicationConfiguration.getToken().getExpirationTime()
             );
 
 

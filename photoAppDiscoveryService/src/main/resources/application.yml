@@ -5,10 +5,29 @@ spring:
     name: photoAppDiscoveryService
 
 eureka:
-  instance:
-    hostname: localhost
+#  instance:
+#    hostname: localhost
   client:
-    register-with-eureka: false
     service-url:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka
+    register-with-eureka: true
+    fetch-registry: true
+    healthcheck:
+      enabled: true
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+    health-check-url-path: /actuator/health
 
+# Configuration Actuator pour health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

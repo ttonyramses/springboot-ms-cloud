@@ -4,12 +4,13 @@ import com.appsdeveloperblog.photoapp.api.users.application.port.in.UserUseCase;
 import com.appsdeveloperblog.photoapp.api.users.domain.model.User;
 import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.dto.LoginRequest;
 import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.security.JwtUtil;
+import com.appsdeveloperblog.photoapp.api.users.infrastructure.configuration.ApplicationConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.core.env.Environment;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,15 +22,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.io.IOException;
 import java.util.ArrayList;
 
+@RefreshScope
 public class AuthentificationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final UserUseCase userUseCase;
-    private final Environment environment;
+    private final ApplicationConfiguration applicationConfiguration;
 
-    public AuthentificationFilter(AuthenticationManager authenticationManager, UserUseCase userUseCase, Environment environment) {
+    public AuthentificationFilter(AuthenticationManager authenticationManager, UserUseCase userUseCase, ApplicationConfiguration applicationConfiguration) {
         super(authenticationManager);
         this.userUseCase = userUseCase;
-        this.environment = environment;
+        this.applicationConfiguration = applicationConfiguration;
     }
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -49,8 +51,8 @@ public class AuthentificationFilter extends UsernamePasswordAuthenticationFilter
 
        String email =  ((UserDetails)authResult.getPrincipal()).getUsername();
         User user = userUseCase.findUserByEmail(email).orElseThrow(()->new UsernameNotFoundException("User not found with email: " + email));;
-        String tokenSecret = environment.getProperty("token.secret");
-        Long expirationTime = environment.getProperty("token.expiration.time", Long.class, 1800L);
+        String tokenSecret = applicationConfiguration.getToken().getSecret();
+        Long expirationTime = applicationConfiguration.getToken().getExpirationTime();
 
         JwtUtil jwtUtil = new JwtUtil(tokenSecret, expirationTime);
 
