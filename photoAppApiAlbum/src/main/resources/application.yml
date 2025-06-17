@@ -1,0 +1,113 @@
+server:
+  port: 0
+spring:
+  application:
+    name: album-ws
+    instance_id: ${random.value}
+  devtools:
+    restart:
+      enabled: true
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8010/eureka
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id}
+
+
+management:
+  endpoint:
+    health:
+      enabled: true
+      show-details: always
+    busrefresh:
+      enabled: true
+    gateway:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include:
+          - gateway
+          - busrefresh
+          - health
+          - mappings
+          - info
+          - httpexchanges
+          - circuitbreakers
+          - circuitbreakerevents
+          - retries
+          - ratelimiters
+  health:
+    circuitbreakers:
+      enabled: true
+    ratelimiters:
+      enabled: true
+
+
+# Configuration Resilience4j pour Feign
+resilience4j:
+  # Configuration Circuit Breaker
+  circuitbreaker:
+    instances:
+      users-ws:
+        failure-rate-threshold: 50                    # 50% d'échecs pour ouvrir
+        wait-duration-in-open-state: 30s             # Attendre 30s avant test
+        sliding-window-size: 10                      # Fenêtre de 10 requêtes
+        minimum-number-of-calls: 5                   # Minimum 5 appels pour évaluer
+        permitted-number-of-calls-in-half-open-state: 3  # 3 appels de test
+        slow-call-duration-threshold: 3s             # Appel lent après 3s
+        slow-call-rate-threshold: 50                 # 50% d'appels lents pour ouvrir
+        register-health-indicator: true
+
+  # Configuration Retry
+  retry:
+    instances:
+      users-ws:
+        max-attempts: 3                              # 3 tentatives maximum
+        wait-duration: 1s                            # Attendre 1s entre tentatives
+        exponential-backoff-multiplier: 2            # Backoff exponentiel x2
+        retry-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - feign.FeignException$InternalServerError
+          - feign.FeignException$BadGateway
+          - feign.FeignException$ServiceUnavailable
+          - feign.FeignException$GatewayTimeout
+        ignore-exceptions:
+          - feign.FeignException$NotFound
+          - feign.FeignException$Unauthorized
+          - feign.FeignException$Forbidden
+
+  # Configuration Time Limiter
+  timelimiter:
+    instances:
+      album-ws:
+        timeout-duration: 5s                         # Timeout global de 5s
+        cancel-running-future: true
+
+  # Configuration Rate Limiter (optionnel)
+  ratelimiter:
+    instances:
+      album-ws:
+        limit-for-period: 20                         # 20 requêtes par période
+        limit-refresh-period: 1s                     # Période de 1 seconde
+        timeout-duration: 0                          # Pas d'attente
+
+# Configuration Feign avec timeouts
+feign:
+  client:
+    config:
+      album-ws:
+        connect-timeout: 2000                        # Timeout connexion 2s
+        read-timeout: 5000                           # Timeout lecture 5s
+        logger-level: full                           # Log complet pour debug
+
+
+# Logs pour debug
+logging:
+  file : logs/album-ws.log
+  level:
+    com.appsdeveloperblog.photoapp.api.album.infrastructure.adaptater.in.web.service: DEBUG
+    feign: DEBUG
+    io.github.resilience4j: DEBUG

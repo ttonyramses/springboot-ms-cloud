@@ -2,6 +2,7 @@ package com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web
 
 import com.appsdeveloperblog.photoapp.api.users.application.port.in.UserUseCase;
 import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.filter.AuthentificationFilter;
+import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.filter.JwtRequestFilter;
 import com.appsdeveloperblog.photoapp.api.users.infrastructure.configuration.ApplicationConfiguration;
 import org.springframework.boot.actuate.web.exchanges.HttpExchangeRepository;
 import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
@@ -16,16 +17,19 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfiguration {
     private final UserUseCase userUseCase;
     private final ApplicationConfiguration applicationConfiguration;
+    private final JwtTokenUtil jwtTokenUtil;
 
-    public WebSecurityConfiguration(UserUseCase userUseCase,  ApplicationConfiguration applicationConfiguration) {
+    public WebSecurityConfiguration(UserUseCase userUseCase, ApplicationConfiguration applicationConfiguration, JwtTokenUtil jwtTokenUtil) {
         this.userUseCase = userUseCase;
         this.applicationConfiguration = applicationConfiguration;
+        this.jwtTokenUtil = jwtTokenUtil;
     }
 
 
@@ -37,17 +41,23 @@ public class WebSecurityConfiguration {
         authenticationManagerBuilder.userDetailsService(userUseCase).passwordEncoder(new BCryptPasswordEncoder());
         AuthenticationManager authenticationManager = authenticationManagerBuilder.build();
 
-        AuthentificationFilter authentificationFilter = new AuthentificationFilter(authenticationManager, userUseCase, applicationConfiguration);
+        AuthentificationFilter authentificationFilter = new AuthentificationFilter(authenticationManager, userUseCase, jwtTokenUtil);
         authentificationFilter.setFilterProcessesUrl(applicationConfiguration.getLoginUrlPath());
+
+        // Créer le filtre JWT pour les autres requêtes
+        JwtRequestFilter jwtRequestFilter = new JwtRequestFilter(userUseCase, jwtTokenUtil);
+
 
         http.csrf(AbstractHttpConfigurer::disable);
         http.authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/users/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers(applicationConfiguration.getLoginUrlPath()).permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated())
+                // Ajouter le filtre d'authentification (pour login)
                 .addFilter(authentificationFilter)
+                // Ajouter le filtre JWT (pour validation des tokens)
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
                 .authenticationManager(authenticationManager)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

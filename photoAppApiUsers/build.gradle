@@ -27,10 +27,18 @@ ext {
 		implementation("org.springframework.boot:spring-boot-starter-security")
 		implementation("org.springframework.cloud:spring-cloud-starter-config")
 		implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
-		implementation 'org.springframework.boot:spring-boot-starter-actuator'
 		implementation 'org.springframework.cloud:spring-cloud-starter-bus-amqp'
-
+		implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+		implementation 'io.github.resilience4j:resilience4j-spring-boot3'
+		implementation 'org.springframework.boot:spring-boot-starter-aop'
 		implementation 'org.postgresql:postgresql'
+
+		// Observalibility
+		implementation 'org.springframework.boot:spring-boot-starter-actuator'
+		implementation 'io.micrometer:micrometer-observation'
+		implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+		implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+		implementation 'io.github.openfeign:feign-micrometer'
 
 		implementation("com.h2database:h2")
 		implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")

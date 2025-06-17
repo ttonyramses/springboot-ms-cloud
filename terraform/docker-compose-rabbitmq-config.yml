@@ -1,0 +1,204 @@
+# docker-compose-rabbitmq-config.yml
+# Pour le serveur Config + RabbitMQ
+version: '3.8'
+services:
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microservices-network
+
+  config-server:
+    image: openjdk:21-jdk-slim
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///config
+    volumes:
+      - ./config:/config
+      - ./config-server.jar:/app.jar
+    command: ["java", "-jar", "/app.jar"]
+    depends_on:
+      - rabbitmq
+    networks:
+      - microservices-network
+
+volumes:
+  rabbitmq_data:
+
+networks:
+  microservices-network:
+    driver: bridge
+
+---
+# docker-compose-eureka.yml
+# Pour le serveur Eureka
+version: '3.8'
+services:
+  eureka-server:
+    image: openjdk:21-jdk-slim
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    volumes:
+      - ./eureka-server.jar:/app.jar
+    command: ["java", "-jar", "/app.jar"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
+---
+# docker-compose-api-gateway.yml
+# Pour l'API Gateway
+version: '3.8'
+services:
+  api-gateway:
+    image: openjdk:21-jdk-slim
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api-gateway.jar:/app.jar
+    command: ["java", "-jar", "/app.jar"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
+---
+# docker-compose-albums-service.yml
+# Pour le microservice Albums + Logstash
+version: '3.8'
+services:
+  albums-service:
+    image: openjdk:21-jdk-slim
+    container_name: albums-service
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./albums-service.jar:/app.jar
+    command: ["java", "-jar", "/app.jar"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql-db:5432/microservicesdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+    networks:
+      - microservices-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash-albums
+    ports:
+      - "5044:5044"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
+---
+# docker-compose-users-service.yml
+# Pour le microservice Users + Logstash
+version: '3.8'
+services:
+  users-service:
+    image: openjdk:21-jdk-slim
+    container_name: users-service
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./users-service.jar:/app.jar
+    command: ["java", "-jar", "/app.jar"]
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql-db:5432/microservicesdb
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+    networks:
+      - microservices-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash-users
+    ports:
+      - "5045:5044"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
+---
+# logstash.conf
+  # Configuration Logstash pour les logs
+  input {
+  beats {
+  port => 5044
+  }
+  
+  file {
+  path => "/var/log/microservices/*.log"
+  start_position => "beginning"
+  sincedb_path => "/dev/null"
+  }
+}
+
+  filter {
+  if [fields][service] {
+  mutate {
+  add_field => { "service_name" => "%{[fields][service]}" }
+  }
+  }
+  
+  grok {
+  match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} %{DATA:logger} - %{GREEDYDATA:log_message}" }
+  }
+  
+  date {
+  match => [ "timestamp", "yyyy-MM-dd HH:mm:ss.SSS" ]
+  }
+}
+
+  output {
+  elasticsearch {
+  hosts => ["elasticsearch:9200"]
+  index => "microservices-logs-%{+YYYY.MM.dd}"
+  }
+  
+  stdout {
+  codec => rubydebug
+  }
+}

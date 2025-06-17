@@ -1,25 +1,258 @@
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+# .gitignore pour projet Terraform Microservices
 
+# ============================================================================
+# FICHIERS TERRAFORM
+# ============================================================================
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# Fichiers d'état Terraform
+*.tfstate
+*.tfstate.*
+*.tfstate.backup*
+
+# Plans Terraform
+*.tfplan
+*.tfplan.*
+
+# Répertoire Terraform
+.terraform/
+.terraform.lock.hcl
+
+# Fichiers de variables contenant des secrets
+terraform.tfvars
+*.auto.tfvars
+secrets.tfvars
+
+# Fichiers de crash
+crash.log
+crash.*.log
+
+# Fichiers de log Terraform
+terraform.log
+*.terraform.log
+
+# Répertoire des modules Terraform générés
+.terraform.d/
+
+# Fichiers de sauvegarde Terraform
+terraform.tfstate.d/
+
+# ============================================================================
+# FICHIERS DE CONFIGURATION SENSIBLES
+# ============================================================================
+
+# Clés SSH privées
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Fichiers de configuration AWS
+.aws/
+aws-credentials.json
+credentials.json
+
+# Variables d'environnement
+.env
+.env.local
+.env.*.local
+
+# Certificats SSL
+*.crt
+*.cert
+*.p12
+*.pfx
+
+# ============================================================================
+# FICHIERS TEMPORAIRES ET LOGS
+# ============================================================================
+
+# Logs
+*.log
+logs/
+log/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Fichiers de sauvegarde
+*.backup
+*.bak
+*.swp
+*.swo
+*~
+
+# Fichiers de cache
+cache/
+.cache/
+
+# ============================================================================
+# FICHIERS SYSTÈME
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# IDE ET ÉDITEURS
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# IntelliJ IDEA
+.idea/
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
+*.iws
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
 
-### VS Code ###
-.vscode/
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Nano
+*.save
+
+# ============================================================================
+# OUTILS DE DÉVELOPPEMENT
+# ============================================================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Go
+vendor/
+
+# Terraform Docs
+terraform-docs/
+
+# ============================================================================
+# FICHIERS DE DÉPLOIEMENT
+# ============================================================================
+
+# Artifacts de build
+build/
+dist/
+target/
+
+# Fichiers Docker temporaires
+docker-compose.override.yml
+.dockerignore.local
+
+# Scripts temporaires
+deploy-temp.sh
+temp-*.sh
+
+# ============================================================================
+# FICHIERS DE SAUVEGARDE ET ARCHIVES
+# ============================================================================
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Sauvegardes de base de données
+*.sql
+*.dump
+
+# Exports de configuration
+*.export
+*.conf.backup
+
+# ============================================================================
+# FICHIERS SPÉCIFIQUES AU PROJET
+# ============================================================================
+
+# Sauvegardes d'état
+state-backups/
+backups/
+
+# Rapports de sécurité
+security-scan-*
+vulnerability-report-*
+
+# Fichiers de monitoring
+monitoring/logs/
+metrics/
+
+# Configurations locales
+local.tfvars
+*.local.tfvars
+
+# Fichiers de test
+test-results/
+coverage/
+
+# Documentation générée
+docs/generated/
+api-docs/
+
+# Fichiers de debugging
+debug/
+*.debug
+
+# ============================================================================
+# EXCEPTIONS (fichiers à INCLURE malgré les règles ci-dessus)
+# ============================================================================
+
+# Inclure les exemples de configuration
+!terraform.tfvars.example
+!.env.example
+!config.example.*
+
+# Inclure les templates
+!templates/
+!user-data/
+
+# Inclure la documentation
+!README.md
+!CHANGELOG.md
+!docs/
+!docs/**/*.md

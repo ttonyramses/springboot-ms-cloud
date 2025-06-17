@@ -11,14 +11,14 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin_pwd
       # Optionnel : pour créer plusieurs bases
-      # POSTGRES_MULTIPLE_DATABASES: db1,db2,db3
+#      POSTGRES_MULTIPLE_DATABASES: photoAppDB,zipkinDB
     ports:
       - "25432:5432"
-    volumes:
+#    volumes:
       # Persistance des données
-      - postgres_data:/var/lib/postgresql/data
-      # Optionnel : scripts d'initialisation
-      #- ./init-scripts:/docker-entrypoint-initdb.d
+#      - postgres_data:/var/lib/postgresql/data
+      # 🔥 Scripts d'initialisation pour Zipkin
+#      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - postgres_network
     # Optionnel : healthcheck

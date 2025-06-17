@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # ZIPKIN SERVER (Simple - Mémoire)
+  # ========================================
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    environment:
+      - STORAGE_TYPE=mem                    # Stockage en mémoire (dev/test)
+      - JAVA_OPTS=-Xms512m -Xmx512m        # Limite mémoire JVM
+    networks:
+      - zipkin-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9411/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ========================================
+  # ZIPKIN + MYSQL (Production)
+  # ========================================
+  zipkin-mysql:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin-mysql
+    ports:
+      - "9412:9411"
+    environment:
+      - STORAGE_TYPE=mysql
+      - MYSQL_HOST=mysql
+      - MYSQL_TCP_PORT=3306
+      - MYSQL_DB=zipkin
+      - MYSQL_USER=zipkin
+      - MYSQL_PASS=zipkin
+      - JAVA_OPTS=-Xms1g -Xmx1g
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - zipkin-network
+    profiles:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: zipkin-mysql-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=zipkin
+      - MYSQL_USER=zipkin
+      - MYSQL_PASSWORD=zipkin
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - zipkin-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    profiles:
+      - mysql
+
+  # ========================================
+  # ZIPKIN + ELASTICSEARCH (Production avancée)
+  # ========================================
+  zipkin-elasticsearch:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin-elasticsearch
+    ports:
+      - "9413:9411"
+    environment:
+      - STORAGE_TYPE=elasticsearch
+      - ES_HOSTS=elasticsearch:9200
+      - ES_INDEX=zipkin
+      - ES_INDEX_SHARDS=1
+      - ES_INDEX_REPLICAS=0
+      - JAVA_OPTS=-Xms1g -Xmx1g
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - zipkin-network
+    profiles:
+      - elasticsearch
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: zipkin-elasticsearch-db
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - zipkin-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    profiles:
+      - elasticsearch
+
+  # ========================================
+  # PROMETHEUS + GRAFANA (Monitoring)
+  # ========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - zipkin-network
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - zipkin-network
+    profiles:
+      - monitoring
+
+# ========================================
+# VOLUMES
+# ========================================
+volumes:
+  mysql_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# ========================================
+# RÉSEAUX
+# ========================================
+networks:
+  zipkin-network:
+    driver: bridge

@@ -1,0 +1,22 @@
+spring:
+  profiles:
+    include: secrets, postgres
+    #    active: default  # ou dev, prod selon votre environnement
+  cloud:
+    config:
+      uri: http://localhost:8888  # URL de votre Config Server
+      # ou directement : http://localhost:8888 si pas de gateway
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        multiplier: 1.1
+        max-attempts: 6
+      max-interval: 2000
+      username: ${CONFIG_SERVER_USERNAME}
+      password: ${CONFIG_SERVER_PASSWORD}
+  rabbitmq:
+    host: ${server.rabbitmq.host}
+    port: ${server.rabbitmq.port}
+    username: ${server.rabbitmq.username}
+    password: ${server.rabbitmq.password}
+

@@ -3,14 +3,12 @@ package com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web
 import com.appsdeveloperblog.photoapp.api.users.application.port.in.UserUseCase;
 import com.appsdeveloperblog.photoapp.api.users.domain.model.User;
 import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.dto.LoginRequest;
-import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.security.JwtUtil;
-import com.appsdeveloperblog.photoapp.api.users.infrastructure.configuration.ApplicationConfiguration;
+import com.appsdeveloperblog.photoapp.api.users.infrastructure.adaptater.in.web.security.JwtTokenUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,16 +20,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import java.io.IOException;
 import java.util.ArrayList;
 
-@RefreshScope
 public class AuthentificationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final UserUseCase userUseCase;
-    private final ApplicationConfiguration applicationConfiguration;
+    private final JwtTokenUtil jwtTokenUtil;
 
-    public AuthentificationFilter(AuthenticationManager authenticationManager, UserUseCase userUseCase, ApplicationConfiguration applicationConfiguration) {
+    public AuthentificationFilter(AuthenticationManager authenticationManager, UserUseCase userUseCase, JwtTokenUtil jwtTokenUtil) {
         super(authenticationManager);
         this.userUseCase = userUseCase;
-        this.applicationConfiguration = applicationConfiguration;
+        this.jwtTokenUtil = jwtTokenUtil;
     }
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
@@ -49,15 +46,10 @@ public class AuthentificationFilter extends UsernamePasswordAuthenticationFilter
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
 
-       String email =  ((UserDetails)authResult.getPrincipal()).getUsername();
+         UserDetails userDetails = (UserDetails) authResult.getPrincipal();
+        String email =  userDetails.getUsername();
         User user = userUseCase.findUserByEmail(email).orElseThrow(()->new UsernameNotFoundException("User not found with email: " + email));;
-        String tokenSecret = applicationConfiguration.getToken().getSecret();
-        Long expirationTime = applicationConfiguration.getToken().getExpirationTime();
-
-        JwtUtil jwtUtil = new JwtUtil(tokenSecret, expirationTime);
-
-
-        String token = jwtUtil.generateToken(user.email());
+        String token = jwtTokenUtil.generateToken(user);
         response.addHeader("jwt-token", token);
 
         // ✅ Retourner dans le body JSON

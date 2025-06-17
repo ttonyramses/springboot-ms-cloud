@@ -19,6 +19,14 @@ spring:
 #            - RemoveRequestHeader=Cookie
 #            - RewritePath=/toto/(?<segment>.*), /$\{segment}
       routes:
+        - id: album-ws
+          uri: lb://album-ws
+          predicates:
+            - Path=/api/users/*/albums/**
+            - Header=Authorization, ^Bearer\s(.+$)
+          filters:
+            - RemoveRequestHeader=Cookie
+            - AuthorizationHeaderFilter
         - id: users-ws
           uri: lb://users-ws
           predicates:
@@ -27,11 +35,14 @@ spring:
           filters:
             - RemoveRequestHeader=Cookie
             - AuthorizationHeaderFilter
+        # Route pour le service Album
         - id: users-ws-actuator
           uri: lb://users-ws
           predicates:
-            - Path=/actuator/**
-
+            - Path=/users-ws/actuator/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/users-ws/(?<segment>.*),/$\{segment}
 
         - id: users-ws-login
           uri: lb://users-ws
@@ -55,6 +66,7 @@ eureka:
 
 # Configuration des logs
 logging:
+  file: logs/api-gateway.log
   level:
 #    org.springframework.cloud.gateway: DEBUG
 #    org.springframework.cloud.gateway.route: DEBUG
